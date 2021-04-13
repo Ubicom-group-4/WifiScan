@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
@@ -46,10 +47,10 @@ class MainActivity : AppCompatActivity() {
 
         val wifiScanReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) =
-                when (intent.getBooleanExtra(EXTRA_RESULTS_UPDATED, false)) {
-                    true -> scanSuccess()
-                    false -> scanFailure()
-                }
+                    when (intent.getBooleanExtra(EXTRA_RESULTS_UPDATED, false)) {
+                        true -> scanSuccess()
+                        false -> scanFailure()
+                    }
         }
         val intentFilter = IntentFilter().apply { addAction(SCAN_RESULTS_AVAILABLE_ACTION) }
         registerReceiver(wifiScanReceiver, intentFilter)
@@ -62,13 +63,20 @@ class MainActivity : AppCompatActivity() {
 
     @Suppress("DEPRECATION")
     fun scan(view: View) {
-        (0L..60L step 5L).forEach {
+        (0L..60L step 1L).forEach {
             executor.schedule({
                 if (!wifiManager.startScan())
                     scanFailure()
             }, it, SECONDS)
         }
         Toast.makeText(this, "Scan started", LENGTH_SHORT).show()
+        scanButton.isEnabled = false
+        executor.schedule({
+            runOnUiThread {
+                Toast.makeText(this, "Scan Finished", LENGTH_LONG).show()
+                scanButton.isEnabled = true
+            }
+        }, 60, SECONDS)
     }
 
     private fun scanSuccess() {
@@ -80,7 +88,6 @@ class MainActivity : AppCompatActivity() {
             writer.close()
         }
     }
-
 
     private fun scanFailure() {
         Log.i(tag, "Scan Failure")
