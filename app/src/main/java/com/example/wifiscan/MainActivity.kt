@@ -16,6 +16,9 @@ import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.OutputStreamWriter
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -34,8 +37,8 @@ class MainActivity : AppCompatActivity() {
     private val executor = Executors.newSingleThreadScheduledExecutor()
     private lateinit var wifiManager: WifiManager
 
-    //    private lateinit var writer: BufferedWriter
-//    private lateinit var reader: BufferedReader
+    private lateinit var writer: BufferedWriter
+    private lateinit var reader: BufferedReader
     private var entryList = mutableListOf<Entry>()
     private var isResult = false
 
@@ -60,10 +63,10 @@ class MainActivity : AppCompatActivity() {
         val intentFilter = IntentFilter().apply { addAction(SCAN_RESULTS_AVAILABLE_ACTION) }
         registerReceiver(wifiScanReceiver, intentFilter)
 
-//        writer = BufferedWriter(OutputStreamWriter(openFileOutput("data.csv", MODE_PRIVATE)))
-//        writer.write("location,timestamp,ssid,level\n")
-//        writer.flush()
-//        writer.close()
+        writer = BufferedWriter(OutputStreamWriter(openFileOutput("data.csv", MODE_PRIVATE)))
+        writer.write("location,timestamp,ssid,level\n")
+        writer.flush()
+        writer.close()
     }
 
     private fun resultscansuccess() {
@@ -104,13 +107,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scanSuccess() {
-//        wifiManager.scanResults.forEach {
-//            if (it.SSID == "") return
-//            writer = BufferedWriter(OutputStreamWriter(openFileOutput("data.csv", MODE_APPEND)))
-//            writer.append("${locationText.text},${it.timestamp},${it.SSID},${it.level}\n")
-//            writer.flush()
-//            writer.close()
-//        }
+        wifiManager.scanResults.forEach {
+            if (it.SSID == "") return
+            writer = BufferedWriter(OutputStreamWriter(openFileOutput("data.csv", MODE_APPEND)))
+            writer.append("${locationText.text},${it.timestamp},${it.SSID},${it.level}\n")
+            writer.flush()
+            writer.close()
+        }
         entryList.add(
             Entry(
                 location = locationText.text.toString(),
