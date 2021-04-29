@@ -51,11 +51,11 @@ class MainActivity : AppCompatActivity() {
 
         val wifiScanReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                if (isResult) {
-                    resultscansuccess()
-                }
                 return when (intent.getBooleanExtra(EXTRA_RESULTS_UPDATED, false)) {
-                    true -> scanSuccess()
+                    true -> when (isResult) {
+                        true -> resultscansuccess()
+                        false -> scanSuccess()
+                    }
                     false -> scanFailure()
                 }
             }
