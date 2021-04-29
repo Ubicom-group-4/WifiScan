@@ -16,8 +16,7 @@ import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
-import java.io.BufferedWriter
-import java.io.OutputStreamWriter
+import java.io.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -36,24 +35,32 @@ class MainActivity : AppCompatActivity() {
     private val executor = Executors.newSingleThreadScheduledExecutor()
     private lateinit var wifiManager: WifiManager
     private lateinit var writer: BufferedWriter
+    private lateinit var reader: BufferedReader
+    private var entryList = mutableListOf<Entry>()
+    private var isResult = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         requestPermissions(permissions, 100)
 
         wifiManager = getSystemService(WIFI_SERVICE) as WifiManager
 
         val wifiScanReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) =
-                    when (intent.getBooleanExtra(EXTRA_RESULTS_UPDATED, false)) {
-                        true -> scanSuccess()
-                        false -> scanFailure()
-                    }
+            override fun onReceive(context: Context, intent: Intent) {
+                if (isResult){
+                    resultscansuccess()
+                }
+                return when (intent.getBooleanExtra(EXTRA_RESULTS_UPDATED, false)) {
+                    true -> scanSuccess()
+                    false -> scanFailure()
+                }
+            }
         }
         val intentFilter = IntentFilter().apply { addAction(SCAN_RESULTS_AVAILABLE_ACTION) }
         registerReceiver(wifiScanReceiver, intentFilter)
+
+
 
         writer = BufferedWriter(OutputStreamWriter(openFileOutput("data.csv", MODE_PRIVATE)))
         writer.write("location,timestamp,ssid,level\n")
@@ -61,8 +68,16 @@ class MainActivity : AppCompatActivity() {
         writer.close()
     }
 
+    private fun resultscansuccess() {
+        val entry = Entry(locationText.text.toString(), wifiManager.scanResults.map { Pair(it.SSID, it.level) })
+        val result = NN.nearestNeighbour(entryList, entry)
+        Toast.makeText(this, result, LENGTH_LONG).show()
+    }
+
+
     @Suppress("DEPRECATION")
     fun scan(view: View) {
+        isResult = false
         (0L..60L step 1L).forEach {
             executor.schedule({
                 if (!wifiManager.startScan())
@@ -75,6 +90,17 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 Toast.makeText(this, "Scan Finished", LENGTH_LONG).show()
                 scanButton.isEnabled = true
+                reader = BufferedReader(InputStreamReader(openFileInput("data.csv")))
+                var myExternalFile:File = File(getExternalFilesDir(null),"result.csv")
+                try {
+                    val fileOutPutStream = FileOutputStream(myExternalFile)
+                    for (string in reader.readLines())  fileOutPutStream.write(string.toByteArray()+"\n".toByteArray())
+                    fileOutPutStream.flush()
+                    fileOutPutStream.close()
+                    reader.close()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
             }
         }, 60, SECONDS)
     }
@@ -87,10 +113,17 @@ class MainActivity : AppCompatActivity() {
             writer.flush()
             writer.close()
         }
+        entryList.add(Entry(locationText.text.toString(), wifiManager.scanResults.map { Pair(it.SSID, it.level) }))
     }
 
     private fun scanFailure() {
         Log.i(tag, "Scan Failure")
         Toast.makeText(this, "Scan Failure", LENGTH_SHORT).show()
+    }
+
+    @Suppress("DEPRECATION")
+    fun doNearestNeighbour(view: View) {
+        isResult = true
+        wifiManager.startScan()
     }
 }
