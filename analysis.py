@@ -12,11 +12,19 @@ for l in locations:
     ylim(-90,-30)
     title(l)
     ylabel('dB')
-    savefig(f'plot-{l}.pdf')
+    savefig(f'plot-{l}.png')
 
 asus = df[df['ssid'] == 'ASUS_5G' ]
 asus.boxplot(column="level",by='location', rot='-90')
 ylim(-90,-30)
 title('ASUS_5G')
 ylabel('dB')
-savefig('asus.pdf')
+savefig('asus.svg')
+
+h = df[df['ssid'] == 'ASUS_5G']
+print(h.groupby('location').size())
+
+df['timestamp'] //=  1000_0000
+print(df) 
+k = df.pivot_table(values='level', index=df.index, columns='ssid', aggfunc='first')
+print(k)
